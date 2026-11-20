@@ -1,0 +1,17 @@
+# API and configuration
+fastapi
+uvicorn
+pydantic-settings
+
+# Database and migrations
+SQLAlchemy
+psycopg[binary]
+alembic
+
+# Webhook delivery
+httpx
+
+# Testing and linting
+pytest
+pytest-cov
+ruff

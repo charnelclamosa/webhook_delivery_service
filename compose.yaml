@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:17
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "webhook", "-d", "webhook"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  migrate:
+    build: .
+    image: webhook-delivery-service:local
+    env_file: .env
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: .
+    image: webhook-delivery-service:local
+    env_file: .env
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build: .
+    image: webhook-delivery-service:local
+    env_file: .env
+    command: ["python", "-m", "webhook_delivery.worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  demo-receiver:
+    build: .
+    image: webhook-delivery-service:local
+    command: ["uvicorn", "webhook_delivery.demo_receiver:app", "--host", "0.0.0.0", "--port", "8000"]
+
+volumes:
+  postgres_data:
